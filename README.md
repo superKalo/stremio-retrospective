@@ -26,6 +26,17 @@ npm run serve -- --base-path /stremio-retrospective/
 
 Open `http://127.0.0.1:7000/stremio-retrospective/` for the install link and credits. See [the implementation plan](plan.md) for the live data pipeline and deployment phases.
 
+## Generate with TMDB data
+
+Set `TMDB_READ_ACCESS_TOKEN` in the local `.env` or process environment. `.env.example` lists the variable, and Git ignores local credentials. [TMDB authentication](https://developer.themoviedb.org/docs/authentication-application)
+
+```sh
+npm run generate
+npm run serve
+```
+
+Generation uses the current UTC day by default. To test a past UTC day, run `npm run generate -- --date 2026-11-09`. The build reports counts and the catalog digest, validates the artifact, and then replaces `dist/`.
+
 ## Credits
 
 This product uses the TMDB API but is not endorsed or certified by TMDB. [The Movie Database](https://www.themoviedb.org/) supplies movie data and poster artwork in the live add-on. The TMDB logo and third-party movie data and artwork remain subject to their respective terms. The project code and original assets are [MIT-licensed](LICENSE).

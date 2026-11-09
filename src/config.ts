@@ -6,8 +6,13 @@ export const maxCatalogItems = 40;
 export const minimumReleaseYear = 1950;
 export const minimumVoteCount = 25;
 export const maxDiscoveryPages = 3;
+export const maxImdbLookups = 160;
+export const imdbLookupBatchSize = 4;
 export const tmdbLanguage = 'en-US';
+export const tmdbImageBaseUrl = 'https://image.tmdb.org/t/p/';
 export const tmdbPosterSize = 'w342';
+export const maxSiteBytes = 256 * 1024;
+export const generationTimeoutMs = 600_000;
 
 export const siteContentTypes = {
   'index.html': 'text/html; charset=utf-8',

@@ -1,14 +1,14 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { isImdbId, isRecord } from './catalog.ts';
-import { maxDiscoveryPages, minimumVoteCount, tmdbLanguage, tmdbPosterSize } from './config.ts';
+import { isImdbId, isPosterPath, isRecord } from './catalog.ts';
+import {
+  generationTimeoutMs, maxDiscoveryPages, minimumVoteCount, tmdbImageBaseUrl, tmdbLanguage, tmdbPosterSize,
+} from './config.ts';
 import { parseCalendarDate } from './dates.ts';
 
 const apiBase = 'https://api.themoviedb.org/3/';
-const imageBase = 'https://image.tmdb.org/t/p/';
 const maxInFlight = 4;
 const startIntervalMs = 125;
 const requestTimeoutMs = 8_000;
-const ingestionTimeoutMs = 600_000;
 const maxRetryAfterMs = 60_000;
 const maxRetries = 3;
 
@@ -53,8 +53,7 @@ function normalizeMovie(value: unknown, releaseDate: string): MovieCandidate | S
       value.vote_count < minimumVoteCount) return 'votes';
   if (typeof value.popularity !== 'number' || !Number.isFinite(value.popularity) ||
       value.popularity < 0) return 'popularity';
-  if (typeof value.poster_path !== 'string' ||
-      !/^\/[a-z0-9_-]+\.(?:jpe?g|png|webp)$/i.test(value.poster_path)) return 'poster';
+  if (!isPosterPath(value.poster_path)) return 'poster';
 
   const title = (typeof value.title === 'string' && value.title.trim()) ||
     (typeof value.original_title === 'string' && value.original_title.trim());
@@ -157,7 +156,7 @@ export function createTmdbClient(options: ClientOptions) {
   const clock = options.clock ?? systemClock;
   const random = options.random ?? Math.random;
   const stop = new AbortController();
-  const deadline = clock.timeout(ingestionTimeoutMs);
+  const deadline = clock.timeout(generationTimeoutMs);
   const signal = AbortSignal.any([stop.signal, deadline, ...(options.signal ? [options.signal] : [])]);
   const stats = { requests: 0, retries: 0 };
   const imdbIds = new Map<number, Promise<string | null>>();
@@ -298,11 +297,11 @@ export function createTmdbClient(options: ClientOptions) {
 
   function fetchConfiguration(): Promise<{ baseUrl: string; size: string }> {
     return request(new URL('configuration', apiBase), 'configuration', (data) => {
-      if (!isRecord(data) || !isRecord(data.images) || data.images.secure_base_url !== imageBase ||
+      if (!isRecord(data) || !isRecord(data.images) || data.images.secure_base_url !== tmdbImageBaseUrl ||
           !Array.isArray(data.images.poster_sizes) || !data.images.poster_sizes.includes(tmdbPosterSize)) {
         fail('TMDB configuration returned an invalid poster configuration');
       }
-      return { baseUrl: imageBase, size: tmdbPosterSize };
+      return { baseUrl: tmdbImageBaseUrl, size: tmdbPosterSize };
     });
   }
 

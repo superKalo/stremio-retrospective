@@ -95,7 +95,7 @@ test('sends the exact primary-date filters and stops at the third page', async (
   assert.deepEqual(discovery, {
     candidates: [{
       id: 101, title: 'Retrospective Fixture Movie', releaseDate: date,
-      posterPath: '/fixture.jpg', voteCount: 25, popularity: 9.5,
+      posterPath: movie.poster_path, voteCount: 25, popularity: 9.5,
     }],
     pagesFetched: 3, capped: true, skipped: {},
   });

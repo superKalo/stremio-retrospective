@@ -15,7 +15,8 @@
   "scripts": {
     "typecheck": "tsc",
     "test": "node --test \"test/*.test.ts\"",
-    "generate:fixture": "node src/generate.ts",
+    "generate": "node --env-file-if-exists=.env src/generate.ts",
+    "generate:fixture": "node src/generate.ts --fixture",
     "serve": "node src/serve.ts"
   },
   "devDependencies": {

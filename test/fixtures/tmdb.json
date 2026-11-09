@@ -12,7 +12,7 @@
             "adult": false,
             "video": false,
             "release_date": "2001-11-09",
-            "poster_path": "/fixture.jpg",
+            "poster_path": "/uVEFQvFMMsg4e6yb03xOfVsDz4o.jpg",
             "vote_count": 25,
             "popularity": 9.5
           }
@@ -29,5 +29,18 @@
       "secure_base_url": "https://image.tmdb.org/t/p/",
       "poster_sizes": ["w185", "w342", "original"]
     }
+  },
+  "expectedCatalog": {
+    "metas": [
+      {
+        "id": "tt900000001",
+        "type": "movie",
+        "name": "Retrospective Fixture Movie",
+        "poster": "https://image.tmdb.org/t/p/w342/uVEFQvFMMsg4e6yb03xOfVsDz4o.jpg",
+        "posterShape": "poster",
+        "releaseInfo": "2001",
+        "description": "Released on 9 November 2001 (25 years ago)."
+      }
+    ]
   }
 }
