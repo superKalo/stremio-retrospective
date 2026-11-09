@@ -1,0 +1,25 @@
+{
+  "name": "stremio-retrospective",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A Stremio add-on for exploring film history, starting with release anniversaries.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/superkalo/stremio-retrospective.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "node --test \"test/*.test.ts\"",
+    "generate:fixture": "node src/generate.ts",
+    "serve": "node src/serve.ts"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.11",
+    "typescript": "5.9.3"
+  }
+}

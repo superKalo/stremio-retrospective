@@ -1,0 +1,11 @@
+{
+  "id": "io.github.superkalo.retrospective",
+  "version": "1.0.0",
+  "name": "Retrospective",
+  "description": "Explore film history, starting with films released on this calendar day in past years (UTC). Movie data and posters by TMDB.",
+  "resources": ["catalog"],
+  "types": ["movie"],
+  "catalogs": [
+    { "type": "movie", "id": "today", "name": "Released on This Day" }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "discover": {
+    "2001-11-09": {
+      "1": {
+        "page": 1,
+        "total_pages": 1,
+        "results": [
+          {
+            "id": 101,
+            "title": " Retrospective Fixture Movie ",
+            "original_title": "Fixture Original Title",
+            "adult": false,
+            "video": false,
+            "release_date": "2001-11-09",
+            "poster_path": "/fixture.jpg",
+            "vote_count": 25,
+            "popularity": 9.5
+          }
+        ]
+      }
+    }
+  },
+  "externalIds": {
+    "101": { "id": 101, "imdb_id": "tt900000001" },
+    "102": { "id": 102, "imdb_id": null }
+  },
+  "configuration": {
+    "images": {
+      "secure_base_url": "https://image.tmdb.org/t/p/",
+      "poster_sizes": ["w185", "w342", "original"]
+    }
+  }
+}
