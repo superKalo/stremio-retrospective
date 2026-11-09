@@ -17,7 +17,8 @@
     "test": "node --test \"test/*.test.ts\"",
     "generate": "node --env-file-if-exists=.env src/generate.ts",
     "generate:fixture": "node src/generate.ts --fixture",
-    "serve": "node src/serve.ts"
+    "serve": "node src/serve.ts",
+    "verify:live": "node src/verify-live.ts"
   },
   "devDependencies": {
     "@types/node": "24.10.11",

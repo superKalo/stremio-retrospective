@@ -1,0 +1,144 @@
+name: Publish Retrospective
+
+on:
+  schedule:
+    - cron: '17 0 * * *'
+    - cron: '43 4 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: cinema-pages-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: catalog-generation
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      base_url: ${{ steps.pages.outputs.base_url }}
+      effective_date: ${{ steps.catalog.outputs.effective_date }}
+      source_commit: ${{ steps.catalog.outputs.source_commit }}
+      catalog_sha256: ${{ steps.catalog.outputs.catalog_sha256 }}
+      upload: ${{ steps.artifact.outcome }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Check whether the catch-up build is needed
+        id: probe
+        if: github.event_name == 'schedule' && github.event.schedule == '43 4 * * *'
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          result="$(node src/verify-live.ts --probe --base-url "$PAGES_BASE_URL" \
+            --date "$(date -u +%F)" --commit "$(git rev-parse HEAD)")"
+          printf '%s\n' "$result"
+          fresh="$(jq -er 'if .fresh == true then "true" else "false" end' <<< "$result")"
+          printf 'fresh=%s\n' "$fresh" >> "$GITHUB_OUTPUT"
+      - name: Verify checkout
+        if: steps.probe.outputs.fresh != 'true'
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm test
+      - name: Generate catalog
+        id: catalog
+        if: steps.probe.outputs.fresh != 'true'
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          TMDB_READ_ACCESS_TOKEN: ${{ secrets.TMDB_READ_ACCESS_TOKEN }}
+        run: |
+          source_commit="$(git rev-parse HEAD)"
+          node src/generate.ts --base-url "$PAGES_BASE_URL" --commit "$source_commit" \
+            | tee "$RUNNER_TEMP/catalog-summary.json"
+          effective_date="$(jq -er '.effectiveDate | strings' dist/status.json)"
+          catalog_sha256="$(jq -er '.catalogSha256 | strings' dist/status.json)"
+          {
+            printf 'effective_date=%s\n' "$effective_date"
+            printf 'source_commit=%s\n' "$source_commit"
+            printf 'catalog_sha256=%s\n' "$catalog_sha256"
+          } >> "$GITHUB_OUTPUT"
+          {
+            printf '### Retrospective catalog\n\n```json\n'
+            jq . "$RUNNER_TEMP/catalog-summary.json"
+            printf '```\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the validated site
+        id: artifact
+        if: steps.probe.outputs.fresh != 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.upload == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check the catalog still targets today and the head of main
+        env:
+          EFFECTIVE_DATE: ${{ needs.build.outputs.effective_date }}
+          SOURCE_COMMIT: ${{ needs.build.outputs.source_commit }}
+        run: |
+          if [[ "$EFFECTIVE_DATE" != "$(date -u +%F)" ]]; then
+            echo "::error::The UTC day changed. Dispatch a fresh publish run from main."
+            exit 1
+          fi
+          current_commit="$(timeout 30s git ls-remote --exit-code \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" refs/heads/main | cut -f1)"
+          if [[ "$SOURCE_COMMIT" != "$current_commit" ]]; then
+            echo "::error::The head of main changed. Dispatch a fresh publish run from main."
+            exit 1
+          fi
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  smoke:
+    needs: [build, deploy]
+    if: needs.deploy.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Verify the public site
+        env:
+          PAGES_BASE_URL: ${{ needs.build.outputs.base_url }}
+          EFFECTIVE_DATE: ${{ needs.build.outputs.effective_date }}
+          SOURCE_COMMIT: ${{ needs.build.outputs.source_commit }}
+          CATALOG_SHA256: ${{ needs.build.outputs.catalog_sha256 }}
+        run: |
+          node src/verify-live.ts --base-url "$PAGES_BASE_URL" \
+            --date "$EFFECTIVE_DATE" --commit "$SOURCE_COMMIT" --sha256 "$CATALOG_SHA256"
